@@ -1,0 +1,46 @@
+version: "2"
+services:
+  hive_metastore:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    volumes:
+      - ./hive_metastore.sql:/docker-entrypoint-initdb.d/schema.sql
+  namenode:
+    image: bayuadiwibowo/hadoop-namenode:latest
+    hostname: namenode
+    volumes:
+      - ./Makefile:/opt/hadoop/Makefile
+    ports:
+      - 9870:9870
+    env_file:
+      - ./env.cfg
+    environment:
+      ENSURE_NAMENODE_DIR: "/tmp/hadoop-root/dfs/name"
+      HIVE_HOME: "/opt/hive"
+    command: bash -c "make start-zeppelin && make start-namenode && make install-hive"
+  datanode:
+    image: apache/hadoop:3
+    command: [ "hdfs", "datanode" ]
+    env_file:
+      - ./env.cfg
+  resourcemanager:
+    image: apache/hadoop:3
+    hostname: resourcemanager
+    command: [ "yarn", "resourcemanager" ]
+    ports:
+      - 8088:8088
+    env_file:
+      - ./env.cfg
+  nodemanager:
+    image: apache/hadoop:3
+    command: [ "yarn", "nodemanager" ]
+    env_file:
+      - ./env.cfg
+  firefox:
+    image: jlesage/firefox
+    hostname: firefox
+    ports:
+      - 5800:5800
